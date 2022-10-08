@@ -2,7 +2,8 @@ from scipy.fft import rfft,rfftfreq
 import librosa
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
+import json
+import concurrent.futures
 
 def audiosignal(file,offset,duration):
     audio,sample_rate = librosa.load(file,offset=offset,duration=duration,sr=None,mono=True)
@@ -56,8 +57,66 @@ def samplevismachine(freq=1):
     plt.plot(xf,np.abs(yf))
     plt.show()
 
-audiosignal("D7susC.wav",3.1,5)
-fouriertrans("D7susC.wav",3,1)
+def testmatrix(audio):
+    fhat = 0
+    """for i in range(len(audio)):
+        fhatel = (np.exp(-2*np.pi*1j/(len(audio))))**(i*k)
+        fhatel *= audio[k]
+        fhat += fhatel
+    #fhat = fhat*audio[k]"""
+    dftmatrix = []
+    for n in range(len(audio)):
+        flayer = []
+        for i in range(len(audio)):
+            fhatel = (np.exp(-2*np.pi*1j/(len(audio))))**(i*n)
+            flayer.append(fhatel)
+        dftmatrix.append(flayer)
+    dftmatrix = np.asarray(dftmatrix)
+    fhats = np.dot(dftmatrix,audio)
+    return fhats
+
+def manualdft1k(audio,k):
+    result = 0
+    for n in range(len(audio)):
+        result += audio[n]*np.exp(-2*np.pi*1j*(k*n/len(audio)))
+    return result
+
+def manualdft(audio):
+    audioenum = enumerate(audio)
+    result = []
+    for k in range(len(audio)):
+        result.append(manualdft1k(audio,k))
+    return result
+
+def manualdft1kthreading(audio,k):
+    result = 0
+    for n in range(len(audio)):
+        result += audio[n]*np.exp(-2*np.pi*1j*(k*n/len(audio)))
+    return (k,result)
+
+def writejson(data,fname):
+    with open(fname,"w") as f:
+        json.dump(data,f)
+
+def realim(data):
+    result = [[np.real(i),np.imag(i)] for i in data]
+    return result
+
+t,audio = audiosignal("D7susC.wav",3.1,5)
+freqs,fouriers=fouriertrans("D7susC.wav",3.1,5)
+#print(testmatrix(audio)[0:9])
+#print(manualdft1k(audio,2))
+#print(manualdft(audio)[0:9])
+print(fouriers[0:9])
 #audiosignal("2022-03-27 20-49-06.wav",1.9,1)
 #fouriertrans("2022-03-27 20-49-06.wav",1.9,1)
-samplevismachine(0.1)
+#samplevismachine(0.1)
+if __name__ == "__main__":
+    result = []
+    executor = concurrent.futures.ProcessPoolExecutor()
+    futures = [executor.submit(manualdft1kthreading,audio,n) for n in range(len(audio))]
+    for f in concurrent.futures.as_completed(futures):
+        result.append(f.result())
+    result.sort(key = lambda s:s[0])
+    result = [i[1] for i in result]
+    writejson(realim(result),"D7susC5.json")
