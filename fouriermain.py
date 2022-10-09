@@ -4,16 +4,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 import concurrent.futures
+import time
 
 def audiosignal(file,offset,duration):
     audio,sample_rate = librosa.load(file,offset=offset,duration=duration,sr=None,mono=True)
     N = len(audio)
     time = np.linspace(0,N/sample_rate,N)
-    if __name__=="__main__":
+    """if __name__=="__main__":
         plt.xlabel("time (s)")
         plt.ylabel("Sound pressure")
         plt.plot(time,audio)
-        plt.show()
+        plt.show()"""
     return time,audio
 
 def fouriertrans(file,offset,duration):
@@ -23,9 +24,9 @@ def fouriertrans(file,offset,duration):
     fourierspace = rfft(audio)
     freqs = rfftfreq(N,1/sample_rate)
     fouriermod = np.abs(fourierspace)
-    plt.plot(freqs,fouriermod)
+    """plt.plot(freqs,fouriermod)
     if __name__=="__main__":
-        plt.show()
+        plt.show()"""
     print(sample_rate,N)
     return freqs,fourierspace
 
@@ -94,6 +95,16 @@ def manualdft1kthreading(audio,k):
         result += audio[n]*np.exp(-2*np.pi*1j*(k*n/len(audio)))
     return (k,result)
 
+def manualdft1kthreadingnumpy(audio,k):
+    audioarray = np.array(audio)
+    audiolen = len(audio)
+    knarray = k * np.linspace(0,audiolen-1,audiolen)
+    wnarray = np.exp(-2*np.pi*1j/audiolen)
+    resultarray = np.power(wnarray,knarray)
+    resultarray = audioarray * resultarray
+    result = np.sum(resultarray)
+    return (k,result)
+
 def writejson(data,fname):
     with open(fname,"w") as f:
         json.dump(data,f)
@@ -111,12 +122,28 @@ print(fouriers[0:9])
 #audiosignal("2022-03-27 20-49-06.wav",1.9,1)
 #fouriertrans("2022-03-27 20-49-06.wav",1.9,1)
 #samplevismachine(0.1)
-if __name__ == "__main__":
-    result = []
-    executor = concurrent.futures.ProcessPoolExecutor()
-    futures = [executor.submit(manualdft1kthreading,audio,n) for n in range(len(audio))]
-    for f in concurrent.futures.as_completed(futures):
-        result.append(f.result())
-    result.sort(key = lambda s:s[0])
-    result = [i[1] for i in result]
-    writejson(realim(result),"D7susC5.json")
+"""t1 = time.time()
+manualdft1kthreadingnumpy(audio,2)
+t2 = time.time()
+manualdft1kthreading(audio,2)
+t3 = time.time()
+print(t2-t1,t3-t2)"""
+
+print(manualdft1kthreadingnumpy(audio,2))
+print(manualdft1kthreading(audio,2))
+
+"""if __name__ == "__main__":
+    for i in range(11,20):
+        t,audio = audiosignal("D7susC.wav",3.1,0.01*i)
+        freqs,fouriers=fouriertrans("D7susC.wav",3.1,0.01*i)
+        result = []
+        executor = concurrent.futures.ProcessPoolExecutor()
+        futures = [executor.submit(manualdft1kthreadingnumpy,audio,n) for n in range(len(audio))]
+        for f in concurrent.futures.as_completed(futures):
+            result.append(f.result())
+            if f.result()[0]%10000==0:
+                print(f.result())
+        result.sort(key = lambda s:s[0])
+        result = [i[1] for i in result]
+        writejson(realim(result),"D7susC0{}.json".format(str(i)))
+"""
