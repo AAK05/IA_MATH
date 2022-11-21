@@ -113,12 +113,12 @@ def realim(data):
     result = [[np.real(i),np.imag(i)] for i in data]
     return result
 
-t,audio = audiosignal("D7susC.wav",3.1,5)
-freqs,fouriers=fouriertrans("D7susC.wav",3.1,5)
+"""t,audio = audiosignal("D7susC.wav",3.1,5)
+freqs,fouriers=fouriertrans("D7susC.wav",3.1,5)"""
 #print(testmatrix(audio)[0:9])
 #print(manualdft1k(audio,2))
 #print(manualdft(audio)[0:9])
-print(fouriers[0:9])
+"""print(fouriers[0:9])"""
 #audiosignal("2022-03-27 20-49-06.wav",1.9,1)
 #fouriertrans("2022-03-27 20-49-06.wav",1.9,1)
 #samplevismachine(0.1)
@@ -129,8 +129,8 @@ manualdft1kthreading(audio,2)
 t3 = time.time()
 print(t2-t1,t3-t2)"""
 
-print(manualdft1kthreadingnumpy(audio,2))
-print(manualdft1kthreading(audio,2))
+"""print(manualdft1kthreadingnumpy(audio,2))
+print(manualdft1kthreading(audio,2))"""
 
 """if __name__ == "__main__":
     for i in range(11,20):
@@ -145,5 +145,22 @@ print(manualdft1kthreading(audio,2))
                 print(f.result())
         result.sort(key = lambda s:s[0])
         result = [i[1] for i in result]
-        writejson(realim(result),"D7susC0{}.json".format(str(i)))
-"""
+        writejson(realim(result),"D7susC0{}.json".format(str(i)))"""
+
+t,audio = audiosignal("Default_20221120-204024.wav",4,5)
+
+
+if __name__ == "__main__":
+    for i in range(1,50):
+        t,audio = audiosignal("Default_20221120-204024.wav",4,0.1*i)
+        freqs,fouriers=fouriertrans("Default_20221120-204024.wav",4,0.1*i)
+        result = []
+        executor = concurrent.futures.ProcessPoolExecutor()
+        futures = [executor.submit(manualdft1kthreadingnumpy,audio,n) for n in range(len(audio))]
+        for f in concurrent.futures.as_completed(futures):
+            result.append(f.result())
+            if f.result()[0]%10000==0:
+                print(f.result())
+        result.sort(key = lambda s:s[0])
+        result = [i[1] for i in result]
+        writejson(realim(result),"C2res{}.json".format(str(i)))
