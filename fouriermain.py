@@ -151,9 +151,9 @@ t,audio = audiosignal("Default_20221120-204024.wav",4,5)
 
 
 if __name__ == "__main__":
-    for i in range(1,50):
-        t,audio = audiosignal("Default_20221120-204024.wav",4,0.1*i)
-        freqs,fouriers=fouriertrans("Default_20221120-204024.wav",4,0.1*i)
+    for i in range(570,580):
+        t,audio = audiosignal("Default_20221120-204024.wav",4,0.001*i)
+        freqs,fouriers=fouriertrans("Default_20221120-204024.wav",4,0.001*i)
         result = []
         executor = concurrent.futures.ProcessPoolExecutor()
         futures = [executor.submit(manualdft1kthreadingnumpy,audio,n) for n in range(len(audio))]
@@ -163,4 +163,4 @@ if __name__ == "__main__":
                 print(f.result())
         result.sort(key = lambda s:s[0])
         result = [i[1] for i in result]
-        writejson(realim(result),"C2res{}.json".format(str(i)))
+        writejson(realim(result),"C2res0{}.json".format(str(i)))
